@@ -5,7 +5,7 @@ A production-ready Made-to-Measure Curtain Product Detail Page (PDP) section bui
 ---
 
 ## 🚀 Live Demo
-* **Preview URL:** https://tuczukl6osuj76nh-80317448418.shopifypreview.com/products_preview?preview_key=3127fb27516bcefc12ef1fd84a7a080d
+* **Preview URL:** https://aashir-test.myshopify.com/products/the-multi-managed-snowboard
 * **Storefront Password:** jsa
 
 ---
