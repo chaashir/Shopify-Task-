@@ -1,0 +1,540 @@
+<div class="curtain-configurator-wrapper page-width" style="padding-top: {{ section.settings.padding_top }}px; padding-bottom: {{ section.settings.padding_bottom }}px;">
+  <curtain-configurator 
+    class="curtain-configurator"
+    data-product-id="{{ product.id }}"
+    data-currency-symbol="{{ cart.currency.symbol }}"
+    data-money-format="{{ shop.money_format | escape }}"
+  >
+    
+    {%- liquid
+      assign tiers_data = product.metafields.custom.curtain_pricing_tiers.value
+      if tiers_data == blank
+        assign tiers_data = product.metafields.custom.pricing_tiers.value
+      endif
+    -%}
+
+    
+<script type="application/json" data-pricing-tiers>
+      [
+        {%- if tiers_data != blank -%}
+          {%- for tier in tiers_data -%}
+            {
+              "min_width": {{ tier.min_width.value | default: tier.min_width | default: 0 }},
+              "max_width": {{ tier.max_width.value | default: tier.max_width | default: 0 }},
+              "panels_required": {{ tier.panels_required.value | default: tier.panels_required | default: 1 }},
+              "base_price": {{ tier.base_price.value | default: tier.base_price | default: 0 }},
+              "price_per_drop_tier": {{ tier.price_per_drop_tier.value | default: tier.price_per_drop_tier | default: 0 }}
+            }{%- unless forloop.last -%},{%- endunless -%}
+          {%- endfor -%}
+        {%- endif -%}
+      ]
+    </script>
+
+    
+    <script type="application/json" data-product-variants>
+      {{ product.variants | json }}
+    </script>
+
+<div class="configurator-grid">
+      
+      <div class="configurator-media">
+        <div class="media-container" style="position: relative; overflow: hidden; border-radius: 8px; background: #f4f4f4; aspect-ratio: 1 / 1;">
+          {%- if product.featured_image -%}
+            <img 
+              id="ConfiguratorMainImage"
+              src="{{ product.featured_image | image_url: width: 800 }}" 
+              alt="{{ product.title | escape }}"
+              loading="lazy"
+              width="800"
+              height="800"
+              style="width: 100%; height: 100%; object-fit: cover; display: block;"
+            >
+          {%- else -%}
+            {{ 'product-1' | placeholder_svg_tag }}
+          {%- endif -%}
+        </div>
+      </div>
+
+      
+      <div class="configurator-details">
+        <h1 class="configurator-title">{{ product.title }}</h1>
+
+        
+        <div class="configurator-price-box" style="min-height: 48px; display: flex; align-items: baseline; gap: 12px; margin-bottom: 20px;">
+          <span class="calculated-price" data-price-display style="font-size: 2rem; font-weight: 700; color: #111;">
+            {{ product.price | money }}
+          </span>
+          <span class="price-badge" style="font-size: 0.85rem; color: #666; background: #eee; padding: 4px 10px; border-radius: 20px;">
+            Custom Sized
+          </span>
+        </div>
+
+        <form method="post" action="/cart/add" class="configurator-form" data-configurator-form>
+          
+          <input type="hidden" name="id" data-variant-id value="{{ product.selected_or_first_available_variant.id }}">
+
+          
+          <div class="control-group" style="margin-bottom: 24px;">
+            <label class="control-label" style="display: block; font-weight: 600; margin-bottom: 10px;">
+              Fabric & Color: <span data-selected-swatch-label style="font-weight: 400; color: #555;">Select</span>
+            </label>
+            <div class="fabric-swatches-grid" style="display: flex; gap: 16px; flex-wrap: wrap; margin-top: 8px;">
+  {%- for block in section.blocks -%}
+    {%- if block.type == 'fabric_swatch' -%}
+      <label class="swatch-item" style="display: flex; flex-direction: column; align-items: center; cursor: pointer; text-align: center;">
+        <input 
+          type="radio" 
+          name="fabric_swatch" 
+          value="{{ block.settings.title | escape }}" 
+          data-swatch-image="{{ block.settings.swatch_image | image_url: width: 800 }}"
+          {% if forloop.first %}checked{% endif %}
+          style="position: absolute; opacity: 0; pointer-events: none;"
+        >
+        <span 
+          class="swatch-tile" 
+          title="{{ block.settings.title }}"
+          style="
+            display: inline-block;
+            width: 44px; 
+            height: 44px; 
+            border-radius: 50%; 
+            border: 2px solid #ccc; 
+            background-color: {{ block.settings.color_code | default: '#cccccc' }};
+            {% if block.settings.swatch_image != blank %}background-image: url('{{ block.settings.swatch_image | image_url: width: 100 }}'); background-size: cover; background-position: center;{% endif %}
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            transition: all 0.2s ease;
+          "
+        ></span>
+        <span class="swatch-name" style="font-size: 0.8rem; margin-top: 6px; color: #333;">
+          {{ block.settings.title }}
+        </span>
+      </label>
+    {%- endif -%}
+  {%- endfor -%}
+</div>
+          </div>
+
+          
+          <div class="control-group" style="margin-bottom: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: baseline;">
+              <label for="CurtainWidth" class="control-label" style="font-weight: 600; margin-bottom: 6px;">
+                Width (cm):
+              </label>
+              <span style="font-size: 0.8rem; color: #777;">Range: 50cm – 360cm</span>
+            </div>
+            <input 
+              type="number" 
+              id="CurtainWidth" 
+              name="curtain_width" 
+              min="50" 
+              max="360" 
+              value="120"
+              required
+              class="dimension-input"
+              style="width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 1rem;"
+            >
+            
+            <div class="validation-message" data-width-error style="min-height: 20px; font-size: 0.8rem; color: #d00; margin-top: 4px;"></div>
+          </div>
+
+          
+          <div class="control-group" style="margin-bottom: 24px;">
+            <label for="CurtainDrop" class="control-label" style="display: block; font-weight: 600; margin-bottom: 6px;">
+              Drop / Length:
+            </label>
+            <select 
+              id="CurtainDrop" 
+              name="curtain_drop" 
+              class="dimension-select"
+              style="width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 1rem; background: #fff;"
+            >
+              <option value="150" data-drop-tier-index="0" selected>150 cm</option>
+              <option value="200" data-drop-tier-index="1">200 cm</option>
+              <option value="250" data-drop-tier-index="2">250 cm</option>
+            </select>
+          </div>
+
+          
+          <div class="production-summary-card" style="min-height: 52px; background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 6px; padding: 12px 16px; margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between;">
+            <span style="font-size: 0.9rem; color: #495057;">Fabric Panels Calculated:</span>
+            <span class="panel-count-badge" data-panel-count-display style="font-weight: 700; background: #e3f2fd; color: #0d47a1; padding: 4px 12px; border-radius: 12px; font-size: 0.9rem;">
+              1 Panel
+            </span>
+          </div>
+
+          
+          <div class="configurator-action" style="margin-bottom: 12px;">
+            <button 
+              type="submit" 
+              class="button button--primary" 
+              data-add-to-cart 
+              style="width: 100%; padding: 16px; font-size: 1.05rem; font-weight: 600; cursor: pointer; border-radius: 4px;"
+            >
+              <span data-button-text>Add to Cart — {{ product.price | money }}</span>
+            </button>
+          </div>
+
+          <div class="cart-message" data-cart-message style="min-height: 24px; font-size: 0.85rem; text-align: center;"></div>
+        </form>
+      </div>
+    </div>
+  </curtain-configurator>
+</div>
+
+
+<style>
+  .curtain-configurator .configurator-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    align-items: start;
+  }
+  @media (max-width: 768px) {
+    .curtain-configurator .configurator-grid {
+      grid-template-columns: 1fr;
+      gap: 24px;
+    }
+  }
+  .swatch-item input:checked + .swatch-tile {
+    border-color: #000 !important;
+    transform: scale(1.1);
+    box-shadow: 0 0 0 2px #fff inset;
+  }
+  .button--primary {
+    background-color: #121212;
+    color: #fff;
+    border: none;
+    transition: opacity 0.2s ease;
+  }
+  .button--primary:disabled {
+    background-color: #999;
+    cursor: not-allowed;
+  }
+  .swatch-item input:checked + .swatch-tile {
+    border-color: #111 !important;
+    outline: 2px solid #111;
+    outline-offset: 2px;
+    transform: scale(1.08);
+  }
+
+</style>
+
+
+<script>
+  if (!customElements.get('curtain-configurator')) {
+    class CurtainConfigurator extends HTMLElement {
+      constructor() {
+        super();
+        this.tiers = JSON.parse(this.querySelector('[data-pricing-tiers]').textContent || '[]');
+        this.variants = JSON.parse(this.querySelector('[data-product-variants]').textContent || '[]');
+        this.currencySymbol = this.getAttribute('data-currency-symbol') || '$';
+        
+        
+        this.form = this.querySelector('[data-configurator-form]');
+        this.widthInput = this.querySelector('#CurtainWidth');
+        this.dropSelect = this.querySelector('#CurtainDrop');
+        this.swatchInputs = this.querySelectorAll('input[name="fabric_swatch"]');
+        this.priceDisplay = this.querySelector('[data-price-display]');
+        this.panelCountDisplay = this.querySelector('[data-panel-count-display]');
+        this.buttonText = this.querySelector('[data-button-text]');
+        this.addToCartButton = this.querySelector('[data-add-to-cart]');
+        this.widthError = this.querySelector('[data-width-error]');
+        this.swatchLabel = this.querySelector('[data-selected-swatch-label]');
+        this.variantIdInput = this.querySelector('[data-variant-id]');
+        this.mainImage = this.querySelector('#ConfiguratorMainImage');
+        this.cartMessage = this.querySelector('[data-cart-message]');
+
+        this.currentCalculation = {
+          width: 120,
+          drop: 150,
+          dropTierIndex: 0,
+          panels: 1,
+          price: 0,
+          selectedFabric: ''
+        };
+      }
+
+      connectedCallback() {
+        this.bindEvents();
+        this.recalculate();
+      }
+
+      bindEvents() {
+        
+        this.widthInput.addEventListener('input', () => this.recalculate());
+        this.widthInput.addEventListener('change', () => this.recalculate());
+
+        
+        this.dropSelect.addEventListener('change', () => this.recalculate());
+
+        
+        this.swatchInputs.forEach(input => {
+          input.addEventListener('change', (e) => {
+            this.handleSwatchChange(e.target);
+            this.syncMatchingVariant();
+          });
+        });
+
+        
+        this.form.addEventListener('submit', this.handleAddToCart.bind(this));
+      }
+
+      handleSwatchChange(selectedRadio) {
+        if (!selectedRadio) return;
+        if (this.swatchLabel) {
+          this.swatchLabel.textContent = selectedRadio.value;
+        }
+        const imgUrl = selectedRadio.getAttribute('data-swatch-image');
+        if (imgUrl && this.mainImage) {
+          this.mainImage.src = imgUrl;
+        }
+      }
+
+     syncMatchingVariant() {
+        const selectedSwatch = this.querySelector('input[name="fabric_swatch"]:checked');
+        const selectedFabric = selectedSwatch ? selectedSwatch.value.trim().toLowerCase() : '';
+        const selectedDrop = `${this.dropSelect.value}cm`.toLowerCase();
+
+        
+        let matched = this.variants.find(v => {
+          const title = v.title.toLowerCase();
+          return title.includes(selectedFabric) && title.includes(selectedDrop);
+        });
+
+        
+        if (!matched) {
+          matched = this.variants.find(v => v.title.toLowerCase().includes(selectedFabric));
+        }
+
+        if (matched) {
+          this.variantIdInput.value = matched.id;
+          console.log('Selected Variant ID:', matched.id, 'Title:', matched.title);
+        }
+      }
+
+      recalculate() {
+        const widthVal = parseFloat(this.widthInput.value);
+        const selectedDropOption = this.dropSelect.options[this.dropSelect.selectedIndex];
+        const dropVal = parseFloat(this.dropSelect.value);
+        const dropTierIndex = parseInt(selectedDropOption.getAttribute('data-drop-tier-index') || 0, 10);
+
+        
+        if (isNaN(widthVal) || widthVal < 50 || widthVal > 360) {
+          this.widthError.textContent = 'Please enter a valid width between 50cm and 360cm.';
+          this.addToCartButton.disabled = true;
+          this.buttonText.textContent = 'Invalid Dimensions';
+          return;
+        } else {
+          this.widthError.textContent = '';
+          this.addToCartButton.disabled = false;
+        }
+
+        
+        const matchedTier = this.tiers.find(tier => widthVal >= Number(tier.min_width) && widthVal <= Number(tier.max_width)) 
+          || this.tiers[0] 
+          || { panels_required: 1, base_price: 40, price_per_drop_tier: 10 };
+
+        console.log('Available Tiers from Metaobject:', this.tiers);
+        console.log('Matched Tier for width', widthVal, ':', matchedTier);
+
+        const panels = matchedTier.panels_required;
+        const basePrice = parseFloat(matchedTier.base_price);
+        const pricePerDropTier = parseFloat(matchedTier.price_per_drop_tier);
+
+        
+        const finalCalculatedPrice = basePrice + (dropTierIndex * pricePerDropTier);
+
+        const selectedSwatch = this.querySelector('input[name="fabric_swatch"]:checked');
+        const fabricName = selectedSwatch ? selectedSwatch.value : '';
+        if (this.swatchLabel && fabricName) {
+          this.swatchLabel.textContent = fabricName;
+        }
+
+        
+        this.currentCalculation = {
+          width: widthVal,
+          drop: dropVal,
+          dropTierIndex: dropTierIndex,
+          panels: panels,
+          price: finalCalculatedPrice,
+          selectedFabric: fabricName
+        };
+
+        
+        const formattedPrice = `${this.currencySymbol}${finalCalculatedPrice.toFixed(2)}`;
+
+        
+        this.priceDisplay.textContent = formattedPrice;
+        this.panelCountDisplay.textContent = `${panels} ${panels > 1 ? 'Panels' : 'Panel'}`;
+        this.buttonText.textContent = `Add to Cart — ${formattedPrice}`;
+
+        this.syncMatchingVariant();
+      }
+
+      async handleAddToCart(e) {
+        e.preventDefault();
+        
+        this.addToCartButton.disabled = true;
+        const originalButtonHtml = this.buttonText.innerHTML;
+        this.buttonText.textContent = 'Adding...';
+        this.cartMessage.textContent = '';
+
+        
+        const payload = {
+          id: parseInt(this.variantIdInput.value, 10),
+          quantity: 1,
+          properties: {
+            'Width': `${this.currentCalculation.width}cm`,
+            'Drop': `${this.currentCalculation.drop}cm`,
+            'Fabric': this.currentCalculation.selectedFabric,
+            'Custom Calculated Price': `${this.currencySymbol}${this.currentCalculation.price.toFixed(2)}`,
+            '_fabric_panels': this.currentCalculation.panels
+          },
+          sections: 'cart-drawer,cart-icon-bubble'
+        };
+
+        try {
+          const response = await fetch('/cart/add.js', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
+            },
+            body: JSON.stringify(payload)
+          });
+
+          if (!response.ok) {
+            throw new Error('Failed to add item to cart');
+          }
+
+          const cartData = await response.json();
+
+          if (cartData.sections) {
+            this.updateDawnCartDrawer(cartData.sections);
+          }
+
+          this.buttonText.textContent = 'Added to Cart!';
+          setTimeout(() => {
+            this.addToCartButton.disabled = false;
+            this.buttonText.innerHTML = originalButtonHtml;
+          }, 1500);
+
+        } catch (error) {
+          console.error('Cart Add Error:', error);
+          this.cartMessage.style.color = '#d00';
+          this.cartMessage.textContent = 'There was an issue adding to cart. Please try again.';
+          this.addToCartButton.disabled = false;
+          this.buttonText.innerHTML = originalButtonHtml;
+        }
+      }
+
+      updateDawnCartDrawer(sections) {
+        const iconBubble = document.querySelector('#cart-icon-bubble');
+        if (iconBubble && sections['cart-icon-bubble']) {
+          const parser = new DOMParser();
+          const parsedDoc = parser.parseFromString(sections['cart-icon-bubble'], 'text/html');
+          const newBubble = parsedDoc.querySelector('#cart-icon-bubble');
+          if (newBubble) {
+            iconBubble.innerHTML = newBubble.innerHTML;
+          }
+        }
+        const cartDrawer = document.querySelector('cart-drawer');
+        if (cartDrawer && sections['cart-drawer']) {
+          const parser = new DOMParser();
+          const parsedDrawer = parser.parseFromString(sections['cart-drawer'], 'text/html');
+          const newDrawerInner = parsedDrawer.querySelector('cart-drawer');
+          if (newDrawerInner) {
+            cartDrawer.innerHTML = newDrawerInner.innerHTML;
+          }
+          cartDrawer.classList.remove('is-empty');
+          cartDrawer.open();
+        } else {
+          window.location.href = '/cart';
+        }
+      }
+    }
+
+    customElements.define('curtain-configurator', CurtainConfigurator);
+  }
+</script>
+
+{% schema %}
+{
+  "name": "Curtain Configurator",
+  "settings": [
+    {
+      "type": "range",
+      "id": "padding_top",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "label": "Top padding",
+      "default": 36
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "label": "Bottom padding",
+      "default": 36
+    }
+  ],
+  "blocks": [
+    {
+      "type": "fabric_swatch",
+      "name": "Fabric Swatch",
+      "settings": [
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Fabric / Color Name",
+          "default": "Natural Linen"
+        },
+        {
+          "type": "color",
+          "id": "color_code",
+          "label": "Color Code",
+          "default": "#D7C4B7"
+        },
+        {
+          "type": "image_picker",
+          "id": "swatch_image",
+          "label": "Swatch Texture Image"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Curtain Configurator",
+      "blocks": [
+        {
+          "type": "fabric_swatch",
+          "settings": {
+            "title": "Natural Linen",
+            "color_code": "#D7C4B7"
+          }
+        },
+        {
+          "type": "fabric_swatch",
+          "settings": {
+            "title": "Charcoal Grey",
+            "color_code": "#3A3D40"
+          }
+        },
+        {
+          "type": "fabric_swatch",
+          "settings": {
+            "title": "Warm Ivory",
+            "color_code": "#F5F2EB"
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}
